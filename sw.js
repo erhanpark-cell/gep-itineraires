@@ -1,5 +1,5 @@
 // Service worker GEP : l'appli s'ouvre même sans réseau, et les cartes déjà vues restent en mémoire.
-const APP = 'gep-app-v1';
+const APP = 'gep-app-v2';
 const TILES = 'gep-tuiles-v1';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/qrcode.js', 'icons/icon.svg', 'icons/icon-192.png'];
 

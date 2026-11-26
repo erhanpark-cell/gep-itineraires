@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------- constantes
 const GPF = 'https://data.geopf.fr';
 const WFS_URL = GPF + '/wfs/ows';
-const OVERPASS = 'https://overpass-api.de/api/interpreter';
+const OVERPASSES = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
 const NETS = [
   { id: '1TE', label: '1TE (réseau historique 1re cat.)', layer: 'SECUROUTE.TE.1TE', style: 'RESEAU ROUTIER 1TE', color: '#2E7DD7' },
   { id: '2TE48', label: '2TE48 (2e cat. moins de 48 t)', layer: 'SECUROUTE.TE.2TE48', style: 'RESEAU ROUTIER 2TE48', color: '#1E8E3E' },
@@ -296,27 +296,42 @@ async function legAimant(a, b) {
   let feats;
   try { feats = await wfs('troncon_te', cql, 'geometrie,identifiant_te,reseau_te,cpx_numero,nom_voie_ban_droite', 'identifiant_te', 40000); }
   catch (err) { toast('Réseau TE indisponible pour l’instant : liaison par la route.'); return legIGN(a, b); }
-  // graphe : nœuds = extrémités des tronçons
-  const nodes = new Map(); const adj = [];
-  const nodeId = (c) => { const k = c[0].toFixed(6) + ',' + c[1].toFixed(6); let id = nodes.get(k); if (id === undefined) { id = adj.length; nodes.set(k, id); adj.push([]); } return id; };
-  const pts = [];
-  const seen = new Set();
+  // graphe : nœuds = extrémités des tronçons, + points intérieurs où un autre tronçon se raccorde (jonctions en T)
+  const key = (c) => c[0].toFixed(6) + ',' + c[1].toFixed(6);
+  const lines = []; const seen = new Set(); const endKeys = new Set();
   for (const f of feats) {
     const idf = f.properties.identifiant_te; if (seen.has(idf)) continue; seen.add(idf);
-    for (const line of lineCoords(f.geometry)) {
-      if (line.length < 2) continue;
-      const u = nodeId(line[0]), v = nodeId(line[line.length - 1]);
-      const len = cumul(line).pop();
-      const name = f.properties.cpx_numero || f.properties.nom_voie_ban_droite || '';
-      adj[u].push({ to: v, len, line, name });
-      adj[v].push({ to: u, len, line: line.slice().reverse(), name });
-      pts[u] = line[0]; pts[v] = line[line.length - 1];
-    }
+    const name = f.properties.cpx_numero || f.properties.nom_voie_ban_droite || '';
+    for (const line of lineCoords(f.geometry)) if (line.length > 1) { lines.push({ line, name }); endKeys.add(key(line[0])); endKeys.add(key(line[line.length - 1])); }
+  }
+  const nodes = new Map(); const adj = []; const pts = [];
+  const nodeId = (c) => { const k = key(c); let id = nodes.get(k); if (id === undefined) { id = adj.length; nodes.set(k, id); adj.push([]); pts[id] = c; } return id; };
+  const addEdge = (line, name) => { const u = nodeId(line[0]), v = nodeId(line[line.length - 1]); const len = cumul(line).pop(); adj[u].push({ to: v, len, line, name }); adj[v].push({ to: u, len, line: line.slice().reverse(), name }); };
+  for (const { line, name } of lines) {
+    let st = 0;
+    for (let i = 1; i < line.length - 1; i++) if (endKeys.has(key(line[i]))) { addEdge(line.slice(st, i + 1), name); st = i; }
+    addEdge(line.slice(st), name);
   }
   if (!adj.length) { toast('Pas de réseau TE choisi dans cette zone : liaison par la route.'); return legIGN(a, b); }
-  const nearest = (p) => { let best = -1, bd = Infinity; pts.forEach((q, i) => { if (!q) return; const dd = dist(p, q); if (dd < bd) { bd = dd; best = i; } }); return [best, bd]; };
+  // composantes connexes : le réseau TE a des coupures. On autorise des « ponts » par la route
+  // entre morceaux proches (moins de 3 km), pénalisés pour rester sur le réseau le plus possible.
+  const comp = new Int32Array(adj.length).fill(-1); let nc = 0;
+  for (let i = 0; i < adj.length; i++) { if (comp[i] >= 0) continue; const stack = [i]; comp[i] = nc; while (stack.length) { const x = stack.pop(); for (const ed of adj[x]) if (comp[ed.to] < 0) { comp[ed.to] = nc; stack.push(ed.to); } } nc++; }
+  if (nc > 1) {
+    const deg = adj.map((x) => x.length);
+    for (let u = 0; u < adj.length; u++) {
+      if (deg[u] > 1) continue; // seulement les bouts de réseau (impasses)
+      const best = new Map();
+      for (let v = 0; v < adj.length; v++) {
+        if (comp[v] === comp[u]) continue; const dd = dist(pts[u], pts[v]); if (dd > 3000) continue;
+        const cur2 = best.get(comp[v]); if (!cur2 || dd < cur2.dd) best.set(comp[v], { v, dd });
+      }
+      for (const { v, dd } of best.values()) { const len = dd * 2.5 + 300; adj[u].push({ to: v, len, gap: true, line: [pts[u], pts[v]], name: '' }); adj[v].push({ to: u, len, gap: true, line: [pts[v], pts[u]], name: '' }); }
+    }
+  }
+  const nearest = (p) => { let best = -1, bd = Infinity; pts.forEach((q, i) => { const dd = dist(p, q); if (dd < bd) { bd = dd; best = i; } }); return [best, bd]; };
   const [na, da] = nearest(a), [nb, db] = nearest(b);
-  if (da > 3000 || db > 3000) { toast('Point trop loin du réseau TE choisi : liaison par la route.'); return legIGN(a, b); }
+  if (da > 15000 || db > 15000) { toast('Point à plus de 15 km du réseau TE choisi : liaison par la route.'); return legIGN(a, b); }
   // Dijkstra (tas binaire)
   const N = adj.length, D = new Float64Array(N).fill(Infinity), prev = new Int32Array(N).fill(-1), prevE = new Array(N);
   const heap = [[0, na]]; D[na] = 0;
@@ -328,12 +343,20 @@ async function legAimant(a, b) {
   }
   if (!isFinite(D[nb])) { toast('Le réseau TE choisi n’est pas continu entre ces points : liaison par la route sur ce morceau.', 5000); return legIGN(a, b); }
   const chain = []; for (let v = nb; v !== na; v = prev[v]) chain.push(prevE[v]); chain.reverse();
+  const gaps = chain.filter((e) => e.gap).length;
+  if (gaps) toast(`Réseau TE coupé à ${gaps} endroit${gaps > 1 ? 's' : ''} : raccord${gaps > 1 ? 's' : ''} par la route (en rouge dans « Réseau »).`, 5000);
   // raccords : du point de départ vers le réseau, et du réseau vers l'arrivée
   let coords = [], steps = [];
-  if (da > 60) { const c = await legIGN(a, pts[na]); coords = c.coords; steps = c.steps.slice(0, -1); }
+  if (da > 60) { const c = await legIGN(a, pts[na]); coords = c.coords; steps = c.steps.filter((x) => x.type !== 'arrive'); }
   else coords = [a];
   let along = cumul(coords).pop(); let lastName = null, lastBear = null;
   for (const ed of chain) {
+    if (ed.gap) { // morceau hors réseau : liaison routière IGN
+      let c; try { c = await legIGN(ed.line[0], ed.line[1]); } catch (e) { c = { coords: ed.line, steps: [] }; }
+      c.steps.filter((x) => x.type !== 'arrive').forEach((s2) => steps.push({ ...s2, along: along + s2.along }));
+      coords.push(...c.coords.slice(1)); along += cumul(c.coords).pop(); lastName = null; const n2 = c.coords.length; if (n2 > 1) lastBear = bearing(c.coords[n2 - 2], c.coords[n2 - 1]);
+      continue;
+    }
     if (ed.name !== lastName) {
       let txt = lastName === null && !steps.length ? `Partez sur ${ed.name || 'le réseau TE'}` : `Continuez sur ${ed.name || 'le réseau TE'}`;
       if (lastBear != null && ed.line.length > 1) {
@@ -545,7 +568,9 @@ async function analyseOSM() {
   await pool(batches, 2, async (pts) => {
     const poly = pts.map((p) => `${p[0].toFixed(5)},${p[1].toFixed(5)}`).join(',');
     const q = `[out:json][timeout:60];(way["highway"]["maxheight"](around:20,${poly});node["maxheight"](around:20,${poly});way["highway"]["maxweight"](around:20,${poly});way["highway"]["maxwidth"](around:20,${poly});node["maxwidth"](around:20,${poly});way["highway"]["tunnel"="yes"](around:15,${poly}););out tags geom;`;
-    const j = await getJSON(OVERPASS, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 70000 }, 1);
+    let j = null, lastErr;
+    for (const srv of OVERPASSES) { try { j = await getJSON(srv, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 70000 }, 0); break; } catch (e) { lastErr = e; } }
+    if (!j) throw lastErr;
     for (const el of j.elements || []) {
       const t = el.tags || {};
       let pt, along;
@@ -578,7 +603,7 @@ function dedupeOuvrages(A) {
     if (twin && o.src === 'OpenStreetMap') { // complète la fiche TE avec les cotes OSM manquantes
       ['hauteur', 'largeur', 'tonnage'].forEach((k) => { if (twin[k] == null && o[k] != null) { twin[k] = o[k]; twin.osmFill = true; } }); judge(twin); continue;
     }
-    if (out.some((x) => x.id === o.id)) continue;
+    if (out.some((x) => x.id === o.id || (x.src === o.src && x.nom === o.nom && Math.abs(x.along - o.along) < 40))) continue;
     out.push(o);
   }
   A.ouvrages = out;
