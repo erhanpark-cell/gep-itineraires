@@ -318,15 +318,20 @@ async function legAimant(a, b) {
   const comp = new Int32Array(adj.length).fill(-1); let nc = 0;
   for (let i = 0; i < adj.length; i++) { if (comp[i] >= 0) continue; const stack = [i]; comp[i] = nc; while (stack.length) { const x = stack.pop(); for (const ed of adj[x]) if (comp[ed.to] < 0) { comp[ed.to] = nc; stack.push(ed.to); } } nc++; }
   if (nc > 1) {
-    const deg = adj.map((x) => x.length);
+    // grille de 0,04° (~4 km) pour trouver vite les nœuds proches d'un autre morceau
+    const G2 = 0.04, cells = new Map(); const ck = (c) => Math.floor(c[0] / G2) + ':' + Math.floor(c[1] / G2);
+    pts.forEach((c, i) => { const k = ck(c); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(i); });
+    const done = new Set();
     for (let u = 0; u < adj.length; u++) {
-      if (deg[u] > 1) continue; // seulement les bouts de réseau (impasses)
-      const best = new Map();
-      for (let v = 0; v < adj.length; v++) {
-        if (comp[v] === comp[u]) continue; const dd = dist(pts[u], pts[v]); if (dd > 3000) continue;
+      const [cx, cy] = ck(pts[u]).split(':').map(Number); const best = new Map();
+      for (let x = cx - 1; x <= cx + 1; x++) for (let y = cy - 1; y <= cy + 1; y++) for (const v of cells.get(x + ':' + y) || []) {
+        if (comp[v] === comp[u]) continue; const dd = dist(pts[u], pts[v]); if (dd > 4000) continue;
         const cur2 = best.get(comp[v]); if (!cur2 || dd < cur2.dd) best.set(comp[v], { v, dd });
       }
-      for (const { v, dd } of best.values()) { const len = dd * 2.5 + 300; adj[u].push({ to: v, len, gap: true, line: [pts[u], pts[v]], name: '' }); adj[v].push({ to: u, len, gap: true, line: [pts[v], pts[u]], name: '' }); }
+      for (const { v, dd } of best.values()) {
+        const k2 = u < v ? u + '-' + v : v + '-' + u; if (done.has(k2)) continue; done.add(k2);
+        const len = dd * 2.5 + 300; adj[u].push({ to: v, len, gap: true, line: [pts[u], pts[v]], name: '' }); adj[v].push({ to: u, len, gap: true, line: [pts[v], pts[u]], name: '' });
+      }
     }
   }
   const nearest = (p) => { let best = -1, bd = Infinity; pts.forEach((q, i) => { const dd = dist(p, q); if (dd < bd) { bd = dd; best = i; } }); return [best, bd]; };
