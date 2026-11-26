@@ -318,14 +318,14 @@ async function legAimant(a, b) {
   const comp = new Int32Array(adj.length).fill(-1); let nc = 0;
   for (let i = 0; i < adj.length; i++) { if (comp[i] >= 0) continue; const stack = [i]; comp[i] = nc; while (stack.length) { const x = stack.pop(); for (const ed of adj[x]) if (comp[ed.to] < 0) { comp[ed.to] = nc; stack.push(ed.to); } } nc++; }
   if (nc > 1) {
-    // grille de 0,04° (~4 km) pour trouver vite les nœuds proches d'un autre morceau
-    const G2 = 0.04, cells = new Map(); const ck = (c) => Math.floor(c[0] / G2) + ':' + Math.floor(c[1] / G2);
+    // grille de 0,15° (~15 km) pour trouver vite les nœuds proches d'un autre morceau
+    const G2 = 0.15, cells = new Map(); const ck = (c) => Math.floor(c[0] / G2) + ':' + Math.floor(c[1] / G2);
     pts.forEach((c, i) => { const k = ck(c); if (!cells.has(k)) cells.set(k, []); cells.get(k).push(i); });
     const done = new Set();
     for (let u = 0; u < adj.length; u++) {
       const [cx, cy] = ck(pts[u]).split(':').map(Number); const best = new Map();
       for (let x = cx - 1; x <= cx + 1; x++) for (let y = cy - 1; y <= cy + 1; y++) for (const v of cells.get(x + ':' + y) || []) {
-        if (comp[v] === comp[u]) continue; const dd = dist(pts[u], pts[v]); if (dd > 4000) continue;
+        if (comp[v] === comp[u]) continue; const dd = dist(pts[u], pts[v]); if (dd > 15000) continue;
         const cur2 = best.get(comp[v]); if (!cur2 || dd < cur2.dd) best.set(comp[v], { v, dd });
       }
       for (const { v, dd } of best.values()) {
