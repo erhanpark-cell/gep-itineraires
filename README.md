@@ -1,4 +1,4 @@
-# GEP Itinéraires — Guidage Expert Pilotage
+# Pilot+ — par GEP Guidage Expert Pilotage
 
 Appli web installable (téléphone et tablette) pour préparer et suivre des itinéraires de convoi exceptionnel.
 Aucun serveur, aucun compte, aucune clé : l'appli lit directement les données publiques gratuites.

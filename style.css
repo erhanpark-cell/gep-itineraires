@@ -1,5 +1,5 @@
 :root{
-  --navy:#0E2A47; --navy2:#16395E; --orange:#F28C28; --yellow:#FFC20E;
+  --navy:#141414; --navy2:#2A2A2A; --orange:#FFC400; --yellow:#FFC400; --red:#D7261E;
   --bg:#F4F6F9; --card:#fff; --text:#13202E; --muted:#5D6B7A; --line:#DCE2EA;
   --ok:#1E8E3E; --warn:#E37400; --bad:#D93025;
   --safe-b: env(safe-area-inset-bottom, 0px);
@@ -11,8 +11,8 @@ button,select,input,textarea{font:inherit}
 button{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px 12px;min-height:42px;color:var(--text)}
 button:active{transform:scale(.98)}
 button.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
-button.primary.active{background:var(--orange);border-color:var(--orange)}
-button.go{background:var(--orange);color:#fff;border-color:var(--orange);font-weight:600}
+button.primary.active{background:var(--orange);border-color:var(--orange);color:#141414}
+button.go{background:var(--orange);color:#141414;border-color:var(--orange);font-weight:600}
 button.danger{color:var(--bad)}
 select,input,textarea{border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-height:42px;background:#fff;width:100%}
 label{display:block;font-size:.85rem;color:var(--muted);margin:8px 0 3px}
@@ -21,7 +21,8 @@ label{display:block;font-size:.85rem;color:var(--muted);margin:8px 0 3px}
 
 #topbar{position:fixed;z-index:1100;top:0;left:0;right:0;height:56px;padding-top:env(safe-area-inset-top,0);background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:space-between;padding-left:10px;padding-right:6px;z-index:1000;box-sizing:content-box}
 .brand{display:flex;align-items:center;gap:8px}
-.brand strong{display:block;font-size:1.15rem;letter-spacing:.06em;color:var(--yellow)}
+.brand strong{display:block;font-size:1.2rem;letter-spacing:.02em;color:var(--yellow);font-weight:900}
+.brand strong b{display:inline-flex;align-items:center;justify-content:center;width:1.05em;height:1.05em;margin-left:2px;border-radius:50%;background:var(--red);color:#fff;font-size:.85em;vertical-align:.08em}
 .brand span{display:block;font-size:.68rem;opacity:.85;margin-top:-2px;white-space:nowrap}
 @media (max-width:420px){.brand span{display:none}}
 #topbar nav{display:flex;gap:2px}
@@ -31,7 +32,7 @@ label{display:block;font-size:.85rem;color:var(--muted);margin:8px 0 3px}
 #layout{position:fixed;top:calc(56px + env(safe-area-inset-top,0px));left:0;right:0;bottom:0}
 #map{position:absolute;inset:0;background:#dfe6ee}
 .fab{position:absolute;right:12px;z-index:500;width:48px;height:48px;border-radius:50%;font-size:1.4rem;box-shadow:0 2px 8px rgba(0,0,0,.25);bottom:calc(46vh + 12px)}
-#draw-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:600;background:var(--orange);color:#fff;padding:8px 12px;border-radius:10px;font-size:.85rem;max-width:92%;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+#draw-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:600;background:var(--orange);color:#141414;padding:8px 12px;border-radius:10px;font-size:.85rem;max-width:92%;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 
 /* Panneau : bas d'écran sur téléphone */
 .sheet{position:absolute;left:0;right:0;bottom:0;height:46vh;background:var(--card);z-index:1001;border-radius:16px 16px 0 0;box-shadow:0 -4px 16px rgba(0,0,0,.18);display:flex;flex-direction:column;padding:0 10px calc(6px + var(--safe-b));transition:height .2s}
@@ -114,7 +115,7 @@ legend{font-weight:600;color:var(--navy);padding:0 4px}
 #nav-instr{font-size:1.25rem;font-weight:700}
 #nav-dist{font-size:1.6rem;font-weight:800;color:var(--yellow);white-space:nowrap}
 #nav-alert{margin:8px auto;background:var(--bad);color:#fff;padding:12px 16px;border-radius:12px;font-weight:700;font-size:1.05rem;max-width:94%;text-align:center;box-shadow:0 4px 14px rgba(0,0,0,.35)}
-#nav-alert.warn{background:var(--orange)}
+#nav-alert.warn{background:var(--warn)}
 #nav-bottom{background:#fff;display:flex;align-items:center;gap:10px;padding:8px 10px calc(8px + var(--safe-b));box-shadow:0 -3px 12px rgba(0,0,0,.2);flex-wrap:wrap}
 #nav-bottom small{display:block;font-size:.7rem;color:var(--muted)}
 .speed div,.limit div{font-size:1.9rem;font-weight:800;line-height:1}

@@ -1,4 +1,4 @@
-/* GEP Itinéraires — Guidage Expert Pilotage
+/* Pilot+ (GEP Itinéraires) — Guidage Expert Pilotage
  * Appli web (PWA) d'itinéraires pour convois exceptionnels.
  * Données publiques : Géoplateforme IGN (réseaux TE, franchissements, prescriptions,
  * itinéraire, altitude, géocodage), geo.api.gouv.fr (communes), OpenStreetMap (hauteurs/tonnages).
@@ -406,8 +406,8 @@ function buildFull() {
 function renderRoute() {
   gRoute.clearLayers();
   if (!full || full.coords.length < 2) { setStats(cur.waypoints.length ? 'Ajoutez au moins deux points.' : 'Touchez « Tracer » puis la carte pour poser vos points.'); return; }
-  L.polyline(full.coords, { color: '#0E2A47', weight: 9, opacity: 0.35 }).addTo(gRoute);
-  L.polyline(full.coords, { color: '#F28C28', weight: 5, opacity: 0.95 }).addTo(gRoute);
+  L.polyline(full.coords, { color: '#141414', weight: 9, opacity: 0.55 }).addTo(gRoute);
+  L.polyline(full.coords, { color: '#FFC400', weight: 5, opacity: 1 }).addTo(gRoute);
   setStats(`${km(full.dist)} · ${hm(full.dur)} à vitesse convoi · ${category()}e cat.`);
 }
 function setStats(t) { $('#route-stats').textContent = t; }
@@ -734,13 +734,13 @@ function drawProfile(cv, p) {
   ctx.fillText('0', padL, H - 4); ctx.fillText(km(D), W - 110, H - 4);
   ctx.beginPath(); ctx.moveTo(X(0), H - padB); p.pts.forEach((q) => ctx.lineTo(X(q.along), Y(q.z))); ctx.lineTo(X(D), H - padB); ctx.closePath();
   ctx.fillStyle = 'rgba(242,140,40,.25)'; ctx.fill();
-  ctx.beginPath(); p.pts.forEach((q, i) => (i ? ctx.lineTo(X(q.along), Y(q.z)) : ctx.moveTo(X(q.along), Y(q.z)))); ctx.strokeStyle = '#F28C28'; ctx.lineWidth = 3; ctx.stroke();
+  ctx.beginPath(); p.pts.forEach((q, i) => (i ? ctx.lineTo(X(q.along), Y(q.z)) : ctx.moveTo(X(q.along), Y(q.z)))); ctx.strokeStyle = '#D7261E'; ctx.lineWidth = 3; ctx.stroke();
 }
 function printRoadbook() {
   const w = window.open('', '_blank'); if (!w) return toast('Autorisez les fenêtres pour imprimer.');
   const P = DB.profile; const o = analysis?.ouvrages || [];
-  w.document.write(`<html><head><meta charset="utf-8"><title>${esc(cur.name || 'Itinéraire')} – GEP</title><style>body{font-family:system-ui;margin:20px}td,th{border:1px solid #ccc;padding:4px 6px;font-size:12px}table{border-collapse:collapse;width:100%}h1{color:#0E2A47}</style></head><body>
-  <h1>GEP · ${esc(cur.name || 'Itinéraire')}</h1><p>${km(full.dist)} · ${hm(full.dur)} · Convoi ${category()}e cat. : L ${P.longueur} m, l ${P.largeur} m, H ${P.hauteur} m, ${P.poids} t</p>
+  w.document.write(`<html><head><meta charset="utf-8"><title>${esc(cur.name || 'Itinéraire')} – Pilot+</title><style>body{font-family:system-ui;margin:20px}td,th{border:1px solid #ccc;padding:4px 6px;font-size:12px}table{border-collapse:collapse;width:100%}h1{color:#141414}</style></head><body>
+  <h1>Pilot+ · ${esc(cur.name || 'Itinéraire')}</h1><p>${km(full.dist)} · ${hm(full.dur)} · Convoi ${category()}e cat. : L ${P.longueur} m, l ${P.largeur} m, H ${P.hauteur} m, ${P.poids} t</p>
   <h2>Indications</h2><table><tr><th>km</th><th>Indication</th></tr>${full.steps.map((s) => `<tr><td>${(s.along / 1000).toFixed(1)}</td><td>${esc(s.text)}</td></tr>`).join('')}</table>
   <h2>Ouvrages</h2><table><tr><th>km</th><th>Ouvrage</th><th>H</th><th>L</th><th>t</th><th>Alerte</th></tr>${o.map((x) => `<tr><td>${(x.along / 1000).toFixed(1)}</td><td>${esc(x.nom)}</td><td>${fmtM(x.hauteur)}</td><td>${fmtM(x.largeur)}</td><td>${x.tonnage ?? '?'}</td><td>${esc(x.reasons?.join(' · ') || '')}</td></tr>`).join('')}</table>
   <p style="font-size:11px">Document d’aide à la préparation, sans valeur légale. L’arrêté d’autorisation et la reconnaissance du terrain font foi.</p></body></html>`);
@@ -846,9 +846,9 @@ function saveRoute() {
 // GPX
 function exportGPX() {
   if (!full) return toast('Aucun tracé à exporter.');
-  const name = esc(cur.name || 'Itinéraire GEP');
+  const name = esc(cur.name || 'Itinéraire Pilot+');
   const wpts = (analysis?.ouvrages || []).filter((o) => o.level === 'bad' || o.level === 'warn').map((o) => `<wpt lat="${o.lat}" lon="${o.lng}"><name>${esc(o.nom)}</name><desc>${esc(o.reasons.join(' · '))}</desc></wpt>`).join('\n');
-  const gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="GEP Itinéraires" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${name}</name></metadata>\n${wpts}\n<trk><name>${name}</name><trkseg>\n${full.coords.map((c) => `<trkpt lat="${c[0].toFixed(6)}" lon="${c[1].toFixed(6)}"/>`).join('\n')}\n</trkseg></trk>\n</gpx>`;
+  const gpx = `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Pilot+" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${name}</name></metadata>\n${wpts}\n<trk><name>${name}</name><trkseg>\n${full.coords.map((c) => `<trkpt lat="${c[0].toFixed(6)}" lon="${c[1].toFixed(6)}"/>`).join('\n')}\n</trkseg></trk>\n</gpx>`;
   download((cur.name || 'itineraire-gep').replace(/[^\w\-]+/g, '_') + '.gpx', gpx, 'application/gpx+xml');
 }
 function download(name, text, type) {
@@ -875,10 +875,10 @@ function shareRoute() {
   const url = location.origin + location.pathname + '#r=' + encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(data)))));
   let qr = '';
   if (url.length < 2300) { try { const q = qrcode(0, 'L'); q.addData(url); q.make(); qr = `<div class="qr">${q.createImgTag(5, 8)}</div>`; } catch (e) { qr = ''; } }
-  modal('Partager l’itinéraire', `${qr || '<p class="muted">Tracé trop long pour un QR code : envoyez le lien.</p>'}<p class="small muted">Votre collègue ouvre le lien (ou scanne le code) et retrouve le même tracé dans son appli GEP. Les données restent sur vos appareils.</p>
+  modal('Partager l’itinéraire', `${qr || '<p class="muted">Tracé trop long pour un QR code : envoyez le lien.</p>'}<p class="small muted">Votre collègue ouvre le lien (ou scanne le code) et retrouve le même tracé dans son appli Pilot+. Les données restent sur vos appareils.</p>
     <input readonly value="${esc(url)}" id="url"><div class="actions"><button class="primary" id="cp">📋 Copier le lien</button>${navigator.share ? '<button id="sh">📤 Envoyer…</button>' : ''}<button id="gpx">⬇️ Fichier GPX</button></div>`, (el) => {
     $('#cp', el).onclick = async () => { try { await navigator.clipboard.writeText(url); toast('Lien copié.'); } catch (e) { $('#url', el).select(); document.execCommand('copy'); toast('Lien copié.'); } };
-    if (navigator.share) $('#sh', el).onclick = () => navigator.share({ title: 'Itinéraire GEP', text: data.n, url }).catch(() => {});
+    if (navigator.share) $('#sh', el).onclick = () => navigator.share({ title: 'Itinéraire Pilot+', text: data.n, url }).catch(() => {});
     $('#gpx', el).onclick = exportGPX;
   });
 }
@@ -1026,12 +1026,12 @@ let installEvt = null;
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; });
 function installHelp() {
   if (installEvt) { installEvt.prompt(); installEvt = null; return; }
-  modal('Installer GEP', `<h4>Sur Android (téléphone ou tablette)</h4><p>Ouvrez cette page dans Chrome, touchez le menu ⋮ puis « Installer l’application » (ou « Ajouter à l’écran d’accueil »).</p>
+  modal('Installer Pilot+', `<h4>Sur Android (téléphone ou tablette)</h4><p>Ouvrez cette page dans Chrome, touchez le menu ⋮ puis « Installer l’application » (ou « Ajouter à l’écran d’accueil »).</p>
     <h4>Sur iPhone ou iPad</h4><p>Ouvrez cette page dans Safari, touchez le bouton Partager ⬆️ puis « Sur l’écran d’accueil ».</p>
-    <p class="small muted">L’icône GEP apparaît alors comme une appli. Le guidage fonctionne écran allumé (l’appli empêche la mise en veille pendant le guidage).</p>`);
+    <p class="small muted">L’icône Pilot+ apparaît alors comme une appli. Le guidage fonctionne écran allumé (l’appli empêche la mise en veille pendant le guidage).</p>`);
 }
 function aboutDialog() {
-  modal('Sources et limites', `<p><b>GEP Itinéraires</b> est un outil d’aide à la préparation et au guidage, sans valeur légale. Il ne remplace ni votre arrêté d’autorisation, ni la reconnaissance du terrain, ni votre vigilance.</p>
+  modal('Sources et limites', `<p><b>Pilot+</b> (GEP Guidage Expert Pilotage) est un outil d’aide à la préparation et au guidage, sans valeur légale. Il ne remplace ni votre arrêté d’autorisation, ni la reconnaissance du terrain, ni votre vigilance.</p>
     <h4>Données utilisées (gratuites et publiques)</h4><ul class="small"><li>Réseaux TE 1TE, 2TE48, TE72, TE94, TE120, franchissements et prescriptions : Géoportail / IGN Géoplateforme (base TE de la Sécurité routière).</li>
     <li>Calcul de liaison routière, altitudes, recherche d’adresses : IGN Géoplateforme.</li><li>Contours des communes : geo.api.gouv.fr.</li><li>Hauteurs et tonnages complémentaires : contributeurs OpenStreetMap.</li>
     <li>Catégories et vitesses : arrêté du 4 mai 2006. Règles de franchissement des ouvrages : guides Cerema (ex-Sétra).</li></ul>
@@ -1060,7 +1060,7 @@ async function startNav(opt) {
   $('#nav-rec').classList.toggle('on', !!nav.rec);
   if (opt.recordOnly) { $('#nav-instr').textContent = 'Enregistrement du trajet'; $('#nav-dist').textContent = ''; }
   try { if ('wakeLock' in navigator) nav.lock = await navigator.wakeLock.request('screen'); } catch (e) { /* non disponible */ }
-  speak(opt.recordOnly ? 'Enregistrement du trajet démarré.' : 'Guidage GEP démarré. Bonne route.');
+  speak(opt.recordOnly ? 'Enregistrement du trajet démarré.' : 'Guidage Pilot+ démarré. Bonne route.');
   if (opt.sim) {
     let s = 0; const v = 60 / 3.6 * 4; // 60 km/h accéléré 4 fois
     nav.sim = setInterval(() => { s += v; if (s > full.dist) s = full.dist; const p = pointAt(s); onFix({ coords: { latitude: p[0], longitude: p[1], speed: 60 / 3.6, accuracy: 5 } }); if (s >= full.dist) clearInterval(nav.sim); }, 1000);
