@@ -1,7 +1,7 @@
 // Service worker GEP : l'appli s'ouvre même sans réseau, et les cartes déjà vues restent en mémoire.
-const APP = 'gep-app-v6';
+const APP = 'gep-app-v7';
 const TILES = 'gep-tuiles-v1';
-const SHELL = ['./', 'index.html', 'style.css?v=6', 'app.js?v=6', 'manifest.webmanifest', 'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/qrcode.js', 'icons/icon.svg', 'icons/icon-192.png'];
+const SHELL = ['./', 'index.html', 'style.css?v=7', 'app.js?v=7', 'manifest.webmanifest', 'vendor/leaflet.js', 'vendor/leaflet.css', 'vendor/qrcode.js', 'icons/icon.svg', 'icons/icon-192.png'];
 
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(APP).then((c) => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', (e) => {

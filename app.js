@@ -9,7 +9,7 @@
 // ---------------------------------------------------------------- constantes
 const GPF = 'https://data.geopf.fr';
 const WFS_URL = GPF + '/wfs/ows';
-const OVERPASSES = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
+const OVERPASSES = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter', 'https://maps.mail.ru/osm/tools/overpass/api/interpreter'];
 const NETS = [
   { id: '1TE', label: '1TE (réseau historique 1re cat.)', layer: 'SECUROUTE.TE.1TE', style: 'RESEAU ROUTIER 1TE', color: '#2E7DD7' },
   { id: '2TE48', label: '2TE48 (2e cat. moins de 48 t)', layer: 'SECUROUTE.TE.2TE48', style: 'RESEAU ROUTIER 2TE48', color: '#1E8E3E' },
@@ -580,10 +580,10 @@ async function analyseOSM() {
   const out = [];
   await pool(batches, 2, async (pts) => {
     const poly = pts.map((p) => `${p[0].toFixed(5)},${p[1].toFixed(5)}`).join(',');
-    const q = `[out:json][timeout:40];(way["highway"]["maxheight"](around:20,${poly});node["maxheight"](around:20,${poly});way["highway"]["maxweight"](around:20,${poly});way["highway"]["maxwidth"](around:20,${poly});node["maxwidth"](around:20,${poly});way["highway"]["tunnel"="yes"](around:15,${poly}););out tags geom;`;
+    const q = `[out:json][timeout:25];(way["highway"]["maxheight"](around:20,${poly});node["maxheight"](around:20,${poly});way["highway"]["maxweight"](around:20,${poly});way["highway"]["maxwidth"](around:20,${poly});node["maxwidth"](around:20,${poly});way["highway"]["tunnel"="yes"](around:15,${poly}););out tags geom;`;
     let j = null, lastErr;
-    for (const srv of OVERPASSES) { try { j = await getJSON(srv, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 45000 }, 0); break; } catch (e) { lastErr = e; } }
-    if (!j) throw lastErr;
+    for (const srv of OVERPASSES) { try { j = await getJSON(srv, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 25000 }, 0); break; } catch (e) { lastErr = e; } }
+    if (!j) throw new Error('serveurs OpenStreetMap saturés (' + (lastErr?.message || '') + '), réessayez plus tard');
     for (const el of j.elements || []) {
       const t = el.tags || {};
       let pt, along;
@@ -668,7 +668,8 @@ function zoneStatus(z, when = new Date()) { // 'active' | 'soon' (dans 30 min) |
   const mins = when.getHours() * 60 + when.getMinutes();
   for (const [a, b] of z.ranges || []) {
     const [ah, am] = a.split(':').map(Number), [bh, bm] = b.split(':').map(Number); const s = ah * 60 + am, e = bh * 60 + bm;
-    if (mins >= s && mins < e) return { st: 'active', range: `${a}–${b}` };
+    const inside = s <= e ? (mins >= s && mins < e) : (mins >= s || mins < e); // plage de nuit (22 h – 6 h)
+    if (inside) return { st: 'active', range: `${a}–${b}` };
     if (s - mins > 0 && s - mins <= 30) return { st: 'soon', range: `${a}–${b}` };
   }
   return null;
