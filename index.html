@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GEP Itinéraires</title>
+<meta name="description" content="GEP Guidage Expert Pilotage : itinéraires de convoi exceptionnel sur les réseaux TE du Géoportail.">
+<meta name="theme-color" content="#0E2A47">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GEP">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="topbar">
+  <div class="brand">
+    <img src="icons/icon.svg" alt="" width="34" height="34">
+    <div><strong>GEP</strong><span>Guidage Expert Pilotage</span></div>
+  </div>
+  <nav>
+    <button data-panel="convoi" title="Mon convoi">🚛<span>Convoi</span></button>
+    <button data-panel="calques" title="Calques">🗺️<span>Calques</span></button>
+    <button data-panel="itineraires" title="Mes itinéraires">📁<span>Itinéraires</span></button>
+    <button data-panel="horaires" title="Restrictions d'horaire">🕒<span>Horaires</span></button>
+    <button data-panel="plus" title="Plus">☰<span>Plus</span></button>
+  </nav>
+</header>
+
+<main id="layout">
+  <aside id="sheet" class="sheet">
+    <div class="grip" id="grip"></div>
+    <div id="sheet-head">
+      <input id="route-name" placeholder="Nouvel itinéraire" aria-label="Nom de l'itinéraire">
+      <div id="route-stats">Touchez « Tracer » puis la carte pour poser vos points.</div>
+    </div>
+    <div class="toolbar" id="draw-tools">
+      <button id="btn-draw" class="primary">✏️ Tracer</button>
+      <select id="leg-mode" aria-label="Façon de relier les points">
+        <option value="aimant">🧲 Aimant réseau TE</option>
+        <option value="route">🛣️ Suivre la route</option>
+        <option value="droit">📏 Ligne droite</option>
+      </select>
+      <button id="btn-undo" title="Retirer le dernier point">↶</button>
+      <button id="btn-clear" title="Tout effacer">🗑️</button>
+    </div>
+    <div class="toolbar">
+      <button id="btn-search" title="Chercher un lieu">🔎 Lieu</button>
+      <button id="btn-save" title="Enregistrer">💾 Garder</button>
+      <button id="btn-share">📤 Partager</button>
+      <button id="btn-go" class="go">▶ Rouler</button>
+    </div>
+    <div class="tabs" id="tabs">
+      <button data-tab="ouvrages" class="on">Ponts</button>
+      <button data-tab="prescriptions">Prescriptions</button>
+      <button data-tab="reseau">Réseau</button>
+      <button data-tab="pente">Pente</button>
+      <button data-tab="etapes">Étapes</button>
+    </div>
+    <div id="tab-body" class="tab-body"><p class="muted">Aucun itinéraire pour l'instant.</p></div>
+  </aside>
+  <div id="map"></div>
+  <div id="draw-hint" hidden>Mode tracé : touchez la carte pour ajouter un point. Glissez un point pour le déplacer, touchez-le pour le retirer.</div>
+  <button id="btn-locate" class="fab" title="Ma position">◎</button>
+</main>
+
+<!-- Guidage plein écran -->
+<section id="nav" hidden>
+  <div id="nav-top">
+    <div id="nav-instr">Démarrage…</div>
+    <div id="nav-dist"></div>
+  </div>
+  <div id="nav-alert" hidden></div>
+  <div id="nav-bottom">
+    <div class="speed"><div id="nav-speed">0</div><small>km/h</small></div>
+    <div class="limit"><div id="nav-limit">–</div><small id="nav-limit-lbl">limite</small></div>
+    <div class="info"><div id="nav-remain">–</div><small id="nav-next-obs">–</small></div>
+    <div class="nav-btns">
+      <button id="nav-voice" title="Voix">🔊</button>
+      <button id="nav-rec" title="Enregistrer le trajet">⏺</button>
+      <button id="nav-report" title="Signaler">⚠️</button>
+      <button id="nav-stop" class="stop">Quitter</button>
+    </div>
+  </div>
+</section>
+
+<div id="modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head"><h2 id="modal-title"></h2><button id="modal-close" aria-label="Fermer">✕</button></div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+<input type="file" id="file-gpx" accept=".gpx,application/gpx+xml" hidden>
+<input type="file" id="file-backup" accept=".json,application/json" hidden>
+
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/qrcode.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
