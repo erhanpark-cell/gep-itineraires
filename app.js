@@ -379,12 +379,20 @@ async function legAimant(a, b) {
 }
 
 function buildFull() {
-  const coords = [], steps = []; let offset = 0;
+  const coords = [], steps0 = []; let offset = 0;
   legs.forEach((lg, i) => {
     const c = i === 0 ? lg.coords : lg.coords.slice(1);
-    lg.steps.forEach((s) => { if (s.type === 'arrive' && i < legs.length - 1) return; steps.push({ ...s, along: s.along + offset }); });
+    lg.steps.forEach((s) => { if (s.type === 'arrive' && i < legs.length - 1) return; steps0.push({ ...s, along: s.along + offset }); });
     coords.push(...c);
     offset += cumul(lg.coords).pop() || 0;
+  });
+  const steps = [];
+  steps0.forEach((s, i) => {
+    let text = s.text;
+    if (i > 0 && /^Partez/.test(text)) text = text.replace(/^Partez/, 'Continuez');
+    const prev = steps[steps.length - 1];
+    if (prev && /^Continuez/.test(text) && s.name && prev.name === s.name) return; // même route : pas de nouvelle annonce
+    steps.push({ ...s, text });
   });
   const cum = cumul(coords);
   const total = cum[cum.length - 1] || 0;
@@ -572,9 +580,9 @@ async function analyseOSM() {
   const out = [];
   await pool(batches, 2, async (pts) => {
     const poly = pts.map((p) => `${p[0].toFixed(5)},${p[1].toFixed(5)}`).join(',');
-    const q = `[out:json][timeout:60];(way["highway"]["maxheight"](around:20,${poly});node["maxheight"](around:20,${poly});way["highway"]["maxweight"](around:20,${poly});way["highway"]["maxwidth"](around:20,${poly});node["maxwidth"](around:20,${poly});way["highway"]["tunnel"="yes"](around:15,${poly}););out tags geom;`;
+    const q = `[out:json][timeout:40];(way["highway"]["maxheight"](around:20,${poly});node["maxheight"](around:20,${poly});way["highway"]["maxweight"](around:20,${poly});way["highway"]["maxwidth"](around:20,${poly});node["maxwidth"](around:20,${poly});way["highway"]["tunnel"="yes"](around:15,${poly}););out tags geom;`;
     let j = null, lastErr;
-    for (const srv of OVERPASSES) { try { j = await getJSON(srv, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 70000 }, 0); break; } catch (e) { lastErr = e; } }
+    for (const srv of OVERPASSES) { try { j = await getJSON(srv, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 45000 }, 0); break; } catch (e) { lastErr = e; } }
     if (!j) throw lastErr;
     for (const el of j.elements || []) {
       const t = el.tags || {};
@@ -685,7 +693,7 @@ function renderTab() {
     el.innerHTML = busy + errs + `<p class="small muted">${list.length} ouvrage(s) sur le tracé · ⛔ ${bad} bloquant(s) · ⚠️ ${warn} à vérifier · ${unk} sans cote connue. Convoi : ${fmtM(DB.profile.hauteur)} de haut, ${fmtM(DB.profile.largeur)} de large, ${DB.profile.poids} t.</p>` +
       list.map((o, i) => `<div class="item ${o.level === 'bad' ? 'bad' : o.level === 'warn' ? 'warn' : o.level === 'ok' ? 'ok' : ''}" data-i="${i}"><span class="km">km ${(o.along / 1000).toFixed(1)}</span>
       <h4>${obsEmoji(o)} ${esc(o.nom)}</h4><p>${esc(o.nature || '')}${o.voie ? ' · ' + esc(o.voie) : ''}${o.commune ? ' · ' + esc(o.commune) : ''}</p>
-      <p>H ${fmtM(o.hauteur)} · L ${fmtM(o.largeur)} · ${o.tonnage ?? '?'} t</p>${o.reasons?.length ? `<p><b>${esc(o.reasons.join(' · '))}</b></p>` : ''}<p class="small muted">${esc(o.src)}</p></div>`).join('') +
+      <p>${o.level === 'unknown' ? (o.src === 'Géoportail TE' ? 'Aucune restriction indiquée dans la base TE' : 'Cotes inconnues') : `H ${fmtM(o.hauteur)} · L ${fmtM(o.largeur)} · ${o.tonnage ?? '?'} t`}</p>${o.reasons?.length ? `<p><b>${esc(o.reasons.join(' · '))}</b></p>` : ''}<p class="small muted">${esc(o.src)}</p></div>`).join('') +
       '<p class="small muted">Appui long (ou clic droit) sur la carte pour ajouter votre propre mesure d’un pont.</p>';
     $$('.item', el).forEach((it) => it.onclick = () => { const o = list[+it.dataset.i]; map.setView([o.lat, o.lng], 17); });
   } else if (tab === 'prescriptions') {
