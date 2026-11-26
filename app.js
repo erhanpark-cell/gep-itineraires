@@ -1094,7 +1094,7 @@ function onFix(pos) {
   const curStep = [...full.steps].reverse().find((x) => x.along <= s + 8);
   if (st) {
     const d = st.along - s; $('#nav-instr').textContent = st.text; $('#nav-dist').textContent = meters(d);
-    for (const [lim, key] of [[600, 'a'], [200, 'b'], [40, 'c']]) if (d <= lim && !nav.said.has(st.along + key)) { nav.said.add(st.along + key); speak((d > 60 ? 'Dans ' + sayM(d) + ', ' : '') + st.text); break; }
+    for (const [lim, key] of [[600, 'a'], [200, 'b'], [40, 'c']]) if (d <= lim && !nav.said.has(st.along + key)) { nav.said.add(st.along + key); speak(d > 60 ? 'Dans ' + sayM(d) + ', ' + st.text.charAt(0).toLowerCase() + st.text.slice(1) : st.text); break; }
   } else { $('#nav-instr').textContent = 'Arrivée'; $('#nav-dist').textContent = meters(remain); }
   // vitesse maximale selon la catégorie
   const sp = speeds(); const auto = isAutoroute(curStep?.name);
